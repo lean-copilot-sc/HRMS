@@ -1,0 +1,508 @@
+service: hrms-backend
+
+frameworkVersion: '3'
+
+useDotenv: true
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: ${opt:region, 'us-east-1'}
+  stage: ${opt:stage, 'dev'}
+  memorySize: 512
+  timeout: 30
+  environment:
+    MONGODB_URI: ${env:MONGODB_URI}
+    JWT_SECRET: ${env:JWT_SECRET}
+    AWS_S3_BUCKET: ${env:AWS_S3_BUCKET}
+    AWS_EMAIL: ${env:AWS_EMAIL}
+    AWS_EMAIL_HOST: ${env:AWS_EMAIL_HOST}
+    AWS_SES_USER: ${env:AWS_SES_USER}
+    AWS_SES_PASS: ${env:AWS_SES_PASS}
+    REPLY_EMAIL: ${env:REPLY_EMAIL}
+    FRONTEND_URL: ${env:FRONTEND_URL}
+    STAGE: ${env:STAGE}
+    NODE_ENV: ${env:NODE_ENV}
+    WEBAUTHN_RP_ID: ${env:WEBAUTHN_RP_ID}
+    WEBAUTHN_ORIGIN: ${env:WEBAUTHN_ORIGIN}
+    WEBAUTHN_RP_NAME: ${env:WEBAUTHN_RP_NAME}
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - s3:PutObject
+            - s3:GetObject
+            - s3:DeleteObject
+          Resource: "arn:aws:s3:::${env:AWS_S3_BUCKET}/*"
+        - Effect: Allow
+          Action:
+            - ses:SendEmail
+            - ses:SendRawEmail
+          Resource: "*"
+
+functions:
+  # Auth Functions
+  authLogin:
+    handler: src/handlers/auth.login
+    events:
+      - http:
+          path: api/auth/login
+          method: post
+          cors: true
+
+  authRegister:
+    handler: src/handlers/auth.register
+    events:
+      - http:
+          path: api/auth/register
+          method: post
+          cors: true
+
+  authForgotPassword:
+    handler: src/handlers/auth.forgotPassword
+    events:
+      - http:
+          path: api/auth/forgot-password
+          method: post
+          cors: true
+
+  authResetPassword:
+    handler: src/handlers/auth.resetPassword
+    events:
+      - http:
+          path: api/auth/reset-password
+          method: post
+          cors: true
+
+  # Employee Functions
+  getEmployees:
+    handler: src/handlers/employees.getAll
+    events:
+      - http:
+          path: api/employees
+          method: get
+          cors: true
+          authorizer:
+            name: authorizer
+            resultTtlInSeconds: 0
+
+  createEmployee:
+    handler: src/handlers/employees.create
+    events:
+      - http:
+          path: api/employees
+          method: post
+          cors: true
+          authorizer:
+            name: authorizer
+
+  getEmployee:
+    handler: src/handlers/employees.getById
+    events:
+      - http:
+          path: api/employees/{id}
+          method: get
+          cors: true
+          authorizer:
+            name: authorizer
+
+  updateEmployee:
+    handler: src/handlers/employees.update
+    events:
+      - http:
+          path: api/employees/{id}
+          method: put
+          cors: true
+          authorizer:
+            name: authorizer
+
+  deleteEmployee:
+    handler: src/handlers/employees.remove
+    events:
+      - http:
+          path: api/employees/{id}
+          method: delete
+          cors: true
+          authorizer:
+            name: authorizer
+
+  createSalarySlip:
+    handler: src/handlers/salarySlips.create
+    events:
+      - http:
+          path: api/salary-slips
+          method: post
+          cors: true
+          authorizer:
+            name: authorizer
+
+  listSalarySlips:
+    handler: src/handlers/salarySlips.list
+    events:
+      - http:
+          path: api/salary-slips
+          method: get
+          cors: true
+          authorizer:
+            name: authorizer
+
+  getSalarySlip:
+    handler: src/handlers/salarySlips.getById
+    events:
+      - http:
+          path: api/salary-slips/{id}
+          method: get
+          cors: true
+          authorizer:
+            name: authorizer
+
+  updateSalarySlip:
+    handler: src/handlers/salarySlips.update
+    events:
+      - http:
+          path: api/salary-slips/{id}
+          method: put
+          cors: true
+          authorizer:
+            name: authorizer
+
+  deleteSalarySlip:
+    handler: src/handlers/salarySlips.remove
+    events:
+      - http:
+          path: api/salary-slips/{id}
+          method: delete
+          cors: true
+          authorizer:
+            name: authorizer
+
+  getSalarySlipPdf:
+    handler: src/handlers/salarySlips.getPdf
+    events:
+      - http:
+          path: api/salary-slips/{id}/pdf
+          method: get
+          cors: true
+          authorizer:
+            name: authorizer
+
+  exportSalarySlips:
+    handler: src/handlers/salarySlips.export
+    events:
+      - http:
+          path: api/salary-slips/export
+          method: get
+          cors: true
+          authorizer:
+            name: authorizer
+
+  listSalarySlipEmployees:
+    handler: src/handlers/salarySlips.listEmployees
+    events:
+      - http:
+          path: api/salary-slips/employees
+          method: get
+          cors: true
+          authorizer:
+            name: authorizer
+
+  sendSalarySlipEmails:
+    handler: src/handlers/payroll.sendSalarySlips
+    events:
+      - http:
+          path: api/payroll/send-salary-slip
+          method: post
+          cors: true
+          authorizer:
+            name: authorizer
+
+  # Attendance Functions
+  getAllAttendance:
+    handler: src/handlers/attendance.getAll
+    events:
+      - http:
+          path: api/attendance
+          method: get
+          cors: true
+          authorizer:
+            name: authorizer
+
+  clockIn:
+    handler: src/handlers/attendance.clockIn
+    events:
+      - http:
+          path: api/attendance/clock-in
+          method: post
+          cors: true
+          authorizer:
+            name: authorizer
+
+  clockOut:
+    handler: src/handlers/attendance.clockOut
+    events:
+      - http:
+          path: api/attendance/clock-out
+          method: post
+          cors: true
+          authorizer:
+            name: authorizer
+
+  getAttendance:
+    handler: src/handlers/attendance.getByEmployee
+    events:
+      - http:
+          path: api/attendance/{employeeId}
+          method: get
+          cors: true
+          authorizer:
+            name: authorizer
+
+  getAttendanceReport:
+    handler: src/handlers/attendance.getReport
+    events:
+      - http:
+          path: api/attendance/report
+          method: get
+          cors: true
+          authorizer:
+            name: authorizer
+
+  manualAttendance:
+    handler: src/handlers/attendance.manual
+    events:
+      - http:
+          path: api/attendance/manual
+          method: post
+          cors: true
+          authorizer:
+            name: authorizer
+
+  getBiometricAttendanceLogs:
+    handler: src/handlers/attendance.getBiometricLogs
+    events:
+      - http:
+          path: api/attendance/logs
+          method: get
+          cors: true
+          authorizer:
+            name: authorizer
+
+  simpleCheckIn:
+    handler: src/handlers/attendance.simpleCheckIn
+    events:
+      - http:
+          path: api/attendance/logs/checkin
+          method: post
+          cors: true
+          authorizer:
+            name: authorizer
+
+  simpleCheckOut:
+    handler: src/handlers/attendance.simpleCheckOut
+    events:
+      - http:
+          path: api/attendance/logs/checkout
+          method: post
+          cors: true
+          authorizer:
+            name: authorizer
+
+  # Leave Functions
+  requestLeave:
+    handler: src/handlers/leave.request
+    events:
+      - http:
+          path: api/leave/request
+          method: post
+          cors: true
+          authorizer:
+            name: authorizer
+
+  getMyLeaveRequests:
+    handler: src/handlers/leave.getMyRequests
+    events:
+      - http:
+          path: api/leave/my-requests
+          method: get
+          cors: true
+          authorizer:
+            name: authorizer
+
+  getPendingLeaves:
+    handler: src/handlers/leave.getPending
+    events:
+      - http:
+          path: api/leave/pending
+          method: get
+          cors: true
+          authorizer:
+            name: authorizer
+
+  approveLeave:
+    handler: src/handlers/leave.approve
+    events:
+      - http:
+          path: api/leave/{id}/approve
+          method: put
+          cors: true
+          authorizer:
+            name: authorizer
+
+  rejectLeave:
+    handler: src/handlers/leave.reject
+    events:
+      - http:
+          path: api/leave/{id}/reject
+          method: put
+          cors: true
+          authorizer:
+            name: authorizer
+
+  approveLeaveViaEmail:
+    handler: src/handlers/leave.approveViaEmail
+    events:
+      - http:
+          path: api/leave/approve-email
+          method: get
+          cors: true
+
+  rejectLeaveViaEmail:
+    handler: src/handlers/leave.rejectViaEmail
+    events:
+      - http:
+          path: api/leave/reject-email
+          method: get
+          cors: true
+
+
+  # Department Functions
+  getDepartments:
+    handler: src/handlers/departments.getAll
+    events:
+      - http:
+          path: api/departments
+          method: get
+          cors: true
+          authorizer:
+            name: authorizer
+
+  createDepartment:
+    handler: src/handlers/departments.create
+    events:
+      - http:
+          path: api/departments
+          method: post
+          cors: true
+          authorizer:
+            name: authorizer
+
+  updateDepartment:
+    handler: src/handlers/departments.update
+    events:
+      - http:
+          path: api/departments/{id}
+          method: put
+          cors: true
+          authorizer:
+            name: authorizer
+
+  deleteDepartment:
+    handler: src/handlers/departments.remove
+    events:
+      - http:
+          path: api/departments/{id}
+          method: delete
+          cors: true
+          authorizer:
+            name: authorizer
+
+  # Holiday Functions
+  getHolidays:
+    handler: src/handlers/holidays.getAll
+    events:
+      - http:
+          path: api/holidays
+          method: get
+          cors: true
+          authorizer:
+            name: authorizer
+
+  createHoliday:
+    handler: src/handlers/holidays.create
+    events:
+      - http:
+          path: api/holidays
+          method: post
+          cors: true
+          authorizer:
+            name: authorizer
+
+  updateHoliday:
+    handler: src/handlers/holidays.update
+    events:
+      - http:
+          path: api/holidays/{id}
+          method: put
+          cors: true
+          authorizer:
+            name: authorizer
+
+  deleteHoliday:
+    handler: src/handlers/holidays.remove
+    events:
+      - http:
+          path: api/holidays/{id}
+          method: delete
+          cors: true
+          authorizer:
+            name: authorizer
+
+  # Dashboard Functions
+  getDashboardStats:
+    handler: src/handlers/dashboard.getStats
+    events:
+      - http:
+          path: api/dashboard/stats
+          method: get
+          cors: true
+          authorizer:
+            name: authorizer
+
+  getDashboardActivity:
+    handler: src/handlers/dashboard.getActivity
+    events:
+      - http:
+          path: api/dashboard/activity
+          method: get
+          cors: true
+          authorizer:
+            name: authorizer
+
+  # Settings Functions
+  getSettings:
+    handler: src/handlers/settings.getSettings
+    events:
+      - http:
+          path: api/settings
+          method: get
+          cors: true
+          authorizer:
+            name: authorizer
+
+  updateSettings:
+    handler: src/handlers/settings.updateSettings
+    events:
+      - http:
+          path: api/settings
+          method: put
+          cors: true
+          authorizer:
+            name: authorizer
+
+  # Authorizer
+  authorizer:
+    handler: src/middleware/authorizer.handler
+
+plugins:
+  - serverless-offline
